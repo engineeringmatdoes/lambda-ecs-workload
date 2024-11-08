@@ -11,7 +11,7 @@ exports.handler = async (event) => {
             statusCode: 200,
             headers: {},
             body: data.toString('base64'),
-            isBase65Encoded: true
+            isBase64Encoded: true
         };
         return response;
     } catch (error) {
