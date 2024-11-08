@@ -1,0 +1,80 @@
+Parameters:
+  RepositoryName:
+    Type: String
+    Description: The name of the ECR repository to store images
+  ArtifactVersion:
+    Type: String
+    Description: The version of the lambda artifact to deploy
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: The VPC to use
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: The subnets to use
+
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${AWS::StackName}-${RepositoryName}
+      RetentionInDays: 7
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for the lambda function
+      VpcId: !Ref VpcId
+
+  LambdaExectionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-${RepositoryName}-lambda
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::StackName}-${RepositoryName}-lambda
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AllowLambdaToSendLogsToCloudWatch
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt LogGroup.Arn
+              - Sid: AllowLambdaToManageENIs
+                Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ec2:AssignPrivateIpAddresses
+                  - ec2:UnassignPrivateIpAddresses
+                Resource: "*"
+
+  Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref RepositoryName
+      Code:
+        ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${RepositoryName}:${ArtifactVersion}
+      ImageConfig:
+        Command:
+          - lambda-function.handler
+      PackageType: Image
+      LoggingConfig:
+        LogGroup: !Ref LogGroup
+      Architectures:
+        - arm64
+      MemorySize: 128
+      Timeout: 10
+      Role: !GetAtt LambdaExectionRole.Arn
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds: !Ref SubnetIds
