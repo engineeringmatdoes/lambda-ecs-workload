@@ -3,6 +3,7 @@ const path = require('path');
 
 exports.handler = async (event) => {
     const fileName = ['','/'].includes(event.path) ? 'index.html' : event.path;
+    const fileContentType = ['','/'].includes(event.path) ? 'text/html' : null;
     const filePath = path.join('/static', fileName);
 
     try {
@@ -13,6 +14,9 @@ exports.handler = async (event) => {
             body: data.toString('base64'),
             isBase64Encoded: true
         };
+        if (fileContentType) {
+            response.headers['Content-Type'] = fileContentType;
+        }
         return response;
     } catch (error) {
         return {
