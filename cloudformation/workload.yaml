@@ -25,7 +25,7 @@ Resources:
       GroupDescription: Security group for the lambda function
       VpcId: !Ref VpcId
 
-  LambdaExectionRole:
+  LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::StackName}-${RepositoryName}-lambda
@@ -73,7 +73,7 @@ Resources:
         - arm64
       MemorySize: 128
       Timeout: 10
-      Role: !GetAtt LambdaExectionRole.Arn
+      Role: !GetAtt LambdaExecutionRole.Arn
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
