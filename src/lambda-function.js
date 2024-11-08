@@ -7,6 +7,7 @@ exports.handler = async (event) => {
     const filePath = path.join('/static', fileName);
 
     try {
+        console.info(`Retrieving file ${fileName}`);
         const data = await fs.readFile(filePath);
         response = {
             statusCode: 200,
@@ -15,10 +16,12 @@ exports.handler = async (event) => {
             isBase64Encoded: true
         };
         if (fileContentType) {
+            console.info(`Defining content-type: ${fileContentType}`);
             response.headers['Content-Type'] = fileContentType;
         }
         return response;
     } catch (error) {
+        console.error(error);
         return {
             statusCode: error.statusCode === 'ENOENT' ? 404 : 500,
             body: JSON.stringify({
