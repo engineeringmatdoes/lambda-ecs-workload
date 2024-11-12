@@ -9,9 +9,13 @@ exports.handler = async (event) => {
     try {
         console.info(`Retrieving file ${fileName}`);
         const data = await fs.readFile(filePath);
+        const fileModifiedDate = await fs.stat(filePath)
+            .then(stat => stat.mtime.toUTCString());
         response = {
             statusCode: 200,
-            headers: {},
+            headers: {
+                'Last-Modified': fileModifiedDate
+            },
             body: data.toString('base64'),
             isBase64Encoded: true
         };
