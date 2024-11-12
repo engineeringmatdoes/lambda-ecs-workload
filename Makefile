@@ -33,6 +33,12 @@ exec-local: ## Execute the lambda locally
 	@# To see the file contents you can pipe the response through jq and base64 decode it:
 	@# $ make exec-local | jq .body -r | base64 -d
 
+run-nginx-local: ## Run the nginx service locally
+	@docker run -p 8080:8080 --entrypoint="" --rm $(ARTIFACT_NAME):$(ARTIFACT_VERSION) /nginx-start.sh
+
+exec-nginx-local: ## Execute a request to nginx locally
+	@curl -XGET "http://localhost:8080"
+
 deploy-validate: ## Validate the CloudFormation template
 	@aws cloudformation validate-template --template-body file://./cloudformation/prerequisite.yaml
 	@aws cloudformation validate-template --template-body file://./cloudformation/workload.yaml
