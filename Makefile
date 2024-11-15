@@ -2,6 +2,7 @@ AWS_ACCOUNT_ID := $(shell aws sts get-caller-identity --query Account --output t
 AWS_REGION := $(shell aws configure get region)
 ARTIFACT_NAME := lambda-ecs-test
 ARTIFACT_VERSION := $(shell git rev-parse --short HEAD)
+DEPLOYMENT_TYPE := Lambda
 
 src/static-app/build:
 	@cd src/static-app && npm run build
@@ -60,7 +61,8 @@ deploy-workload: ## Deploy the workload
 			RepositoryName=$(ARTIFACT_NAME) \
 			ArtifactVersion=$(ARTIFACT_VERSION) \
 			VpcId=$(shell aws ec2 describe-vpcs --query 'Vpcs[0].VpcId' --output text) \
-			SubnetIds="$(shell aws ec2 describe-subnets --query 'Subnets[*].SubnetId' --output text | tr '\t' ',')"
+			SubnetIds="$(shell aws ec2 describe-subnets --query 'Subnets[*].SubnetId' --output text | tr '\t' ',')" \
+			DeploymentType=$(DEPLOYMENT_TYPE)
 
 deploy-clean: ## Clean up the existing stack
 	@aws cloudformation delete-stack --stack-name $(ARTIFACT_NAME)-workload
