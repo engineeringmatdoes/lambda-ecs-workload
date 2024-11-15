@@ -30,3 +30,7 @@ To build and deploy this project you will need a few tools:
 1. NodeJS ~20.x
 
 All supporting commands to build and deploy this project to your AWS account are managed by Make. You can get the task list by simply running `make` or `make help` on the command line.
+
+## Architecture
+
+![Architecture Diagram](/assets/images/architecture-diagram.png)
