@@ -35,7 +35,10 @@ exec-local: ## Execute the lambda locally
 	@# $ make exec-local | jq .body -r | base64 -d
 
 run-nginx-local: ## Run the nginx service locally
-	@docker run -p 8080:8080 --entrypoint="" --rm $(ARTIFACT_NAME):$(ARTIFACT_VERSION) /nginx-start.sh
+	@docker run -d -p 8080:8080 --entrypoint="" --rm --name $(ARTIFACT_NAME)-local $(ARTIFACT_NAME):$(ARTIFACT_VERSION) /nginx-start.sh
+
+stop-nginx-local: ## Stop the nginx service locally
+	@docker stop $(ARTIFACT_NAME)-local
 
 exec-nginx-local: ## Execute a request to nginx locally
 	@curl -XGET "http://localhost:8080"
@@ -69,6 +72,28 @@ deploy-clean: ## Clean up the existing stack
 	@aws cloudformation wait stack-delete-complete --stack-name $(ARTIFACT_NAME)-workload
 	@aws cloudformation delete-stack --stack-name $(ARTIFACT_NAME)-prereq
 	@aws cloudformation wait stack-delete-complete --stack-name $(ARTIFACT_NAME)-prereq
+
+browser-test-local: run-nginx-local ## Run K6 browser test locally
+	@sleep 4 # warm-up time
+	@k6 run --out csv=load_testing/results/browser-test-results-$(shell date +%Y-%m-%d-%H-%M-%S).csv load_testing/browser.js
+	$(MAKE) stop-nginx-local
+
+browser-test-aws-local: ## Run browser testing locally targeting the AWS deployment
+	@k6 run --out csv=load_testing/results/browser-test-results-aws-$(shell date +%Y-%m-%d-%H-%M-%S).csv --env 'TARGET_URL=http://$(shell aws cloudformation describe-stacks --stack-name $(ARTIFACT_NAME)-workload --query 'Stacks[].Outputs[?OutputKey==`LoadBalancerDnsName`].OutputValue' --output text)' load_testing/browser.js
+
+browser-test-aws-cloud: ## Run browser testing on Grafana Cloud targeting the AWS deployment
+	@k6 cloud run --env 'TARGET_URL=http://$(shell aws cloudformation describe-stacks --stack-name $(ARTIFACT_NAME)-workload --query 'Stacks[].Outputs[?OutputKey==`LoadBalancerDnsName`].OutputValue' --output text)' load_testing/browser.js
+
+load-test-local: run-nginx-local ## Run load testing locally
+	@sleep 4 # warm-up time
+	@k6 run --out csv=load_testing/results/http-test-results-$(shell date +%Y-%m-%d-%H-%M-%S).csv load_testing/http.js
+	$(MAKE) stop-nginx-local
+
+load-test-aws-local: ## Run load testing locally targeting the AWS deployment
+	@k6 run --out csv=load_testing/results/http-test-results-aws-$(shell date +%Y-%m-%d-%H-%M-%S).csv --env 'TARGET_URL=http://$(shell aws cloudformation describe-stacks --stack-name $(ARTIFACT_NAME)-workload --query 'Stacks[].Outputs[?OutputKey==`LoadBalancerDnsName`].OutputValue' --output text)' load_testing/http.js
+
+load-test-aws-cloud: ## Run load testing on Grafana Cloud targeting the AWS deployment
+	@k6 cloud run --env PROFILE=cloud --env 'TARGET_URL=http://$(shell aws cloudformation describe-stacks --stack-name $(ARTIFACT_NAME)-workload --query 'Stacks[].Outputs[?OutputKey==`LoadBalancerDnsName`].OutputValue' --output text)' load_testing/http.js
 
 help: ## Display this help message
 	@echo "====="
