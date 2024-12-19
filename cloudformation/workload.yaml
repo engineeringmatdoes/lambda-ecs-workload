@@ -294,3 +294,7 @@ Resources:
               - GET_OR_HEAD
       ListenerArn: !Ref LoadBalancerListener
       Priority: 10
+
+Outputs:
+  LoadBalancerDnsName:
+    Value: !GetAtt LoadBalancer.DNSName
